@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1b1f2c"/>
+      <stop offset="100%" stop-color="#11141d"/>
+    </linearGradient>
+    <linearGradient id="leftMon" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5cc8ff"/>
+      <stop offset="100%" stop-color="#2e7de9"/>
+    </linearGradient>
+    <linearGradient id="centerMon" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f28444"/>
+      <stop offset="100%" stop-color="#ce422b"/>
+    </linearGradient>
+    <linearGradient id="rightMon" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4fd1b5"/>
+      <stop offset="100%" stop-color="#1f8a7a"/>
+    </linearGradient>
+  </defs>
+  <rect x="10" y="10" width="236" height="236" rx="44" fill="url(#bg)" stroke="#2e3548" stroke-width="4"/>
+  <!-- Portrait left monitor -->
+  <rect x="30" y="42" width="48" height="172" rx="8" fill="#0d1017" stroke="#5cc8ff" stroke-width="2.5"/>
+  <rect x="35" y="47" width="38" height="162" rx="5" fill="url(#leftMon)"/>
+  <!-- Primary center monitor -->
+  <rect x="88" y="66" width="90" height="122" rx="8" fill="#0d1017" stroke="#f28444" stroke-width="3"/>
+  <rect x="93" y="71" width="80" height="112" rx="5" fill="url(#centerMon)"/>
+  <!-- Right landscape monitor -->
+  <rect x="188" y="76" width="38" height="102" rx="8" fill="#0d1017" stroke="#4fd1b5" stroke-width="2.5"/>
+  <rect x="193" y="81" width="28" height="92" rx="5" fill="url(#rightMon)"/>
+</svg>

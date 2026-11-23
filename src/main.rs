@@ -7,6 +7,7 @@ mod ui;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
+use std::path::PathBuf;
 use std::thread;
 use std::time::Duration;
 
@@ -40,6 +41,15 @@ enum Commands {
         /// Optional profile name
         profile: Option<String>,
     },
+    /// Capture a PNG screenshot of the GUI window and exit
+    #[command(hide = true)]
+    Screenshot {
+        /// Output PNG path
+        path: PathBuf,
+        /// Show Spanned mode in the screenshot
+        #[arg(long)]
+        spanned: bool,
+    },
 }
 
 fn select_profile(cfg: &mut config::AppConfig, name: Option<String>) -> Result<()> {
@@ -64,7 +74,23 @@ fn main() -> Result<()> {
 
     match cli.command {
         None => {
-            ui::run_gui(cfg, layout)?;
+            ui::run_gui(cfg, layout, None)?;
+        }
+        Some(Commands::Screenshot { path, spanned }) => {
+            if spanned {
+                let fallback_img = cfg
+                    .active_profile()
+                    .light
+                    .per_monitor
+                    .values()
+                    .find_map(|m| m.image_path.clone());
+                let prof = cfg.active_profile_mut();
+                prof.mode = config::WallpaperMode::Spanned;
+                if prof.light.spanned.image_path.is_none() {
+                    prof.light.spanned.image_path = fallback_img;
+                }
+            }
+            ui::run_gui(cfg, layout, Some(path))?;
         }
         Some(Commands::ListMonitors) => {
             println!(

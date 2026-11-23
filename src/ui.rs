@@ -90,10 +90,17 @@ pub struct RustpaperApp {
     picker_rx: Option<Receiver<(PickerTarget, Option<PathBuf>)>>,
     is_applying: bool,
     last_slideshow_tick: Instant,
+    screenshot_out: Option<PathBuf>,
+    screenshot_frames: u32,
+    screenshot_requested: bool,
 }
 
 impl RustpaperApp {
-    pub fn new(mut config: AppConfig, layout: DesktopLayout) -> Self {
+    pub fn new(
+        mut config: AppConfig,
+        layout: DesktopLayout,
+        screenshot_out: Option<PathBuf>,
+    ) -> Self {
         config.ensure_monitors_initialized(&layout);
         let selected_monitor = layout
             .monitors
@@ -124,6 +131,9 @@ impl RustpaperApp {
             picker_rx: None,
             is_applying: false,
             last_slideshow_tick: Instant::now(),
+            screenshot_out,
+            screenshot_frames: 0,
+            screenshot_requested: false,
         }
     }
 
@@ -1218,6 +1228,42 @@ impl eframe::App for RustpaperApp {
         self.draw_status_bar(ctx);
         self.draw_inspector(ctx);
         self.draw_canvas(ctx);
+
+        // Optional automated screenshot capture (for README / docs)
+        if let Some(out_path) = self.screenshot_out.clone() {
+            let captured = ctx.input(|i| {
+                i.events.iter().find_map(|e| {
+                    if let egui::Event::Screenshot { image, .. } = e {
+                        Some(image.clone())
+                    } else {
+                        None
+                    }
+                })
+            });
+            if let Some(img) = captured {
+                let w = img.width() as u32;
+                let h = img.height() as u32;
+                let mut raw = Vec::with_capacity((w * h * 4) as usize);
+                for px in &img.pixels {
+                    raw.extend_from_slice(&px.to_array());
+                }
+                if let Some(rgba) = image::RgbaImage::from_raw(w, h, raw) {
+                    if let Some(parent) = out_path.parent() {
+                        let _ = std::fs::create_dir_all(parent);
+                    }
+                    let _ = rgba.save(&out_path);
+                }
+                self.screenshot_out = None;
+                ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+            } else {
+                self.screenshot_frames += 1;
+                if self.screenshot_frames >= 5 && !self.screenshot_requested {
+                    self.screenshot_requested = true;
+                    ctx.send_viewport_cmd(egui::ViewportCommand::Screenshot(Default::default()));
+                }
+                ctx.request_repaint();
+            }
+        }
     }
 }
 
@@ -1355,7 +1401,11 @@ fn configure_typography(ctx: &egui::Context) {
     ctx.set_style(style);
 }
 
-pub fn run_gui(config: AppConfig, layout: DesktopLayout) -> anyhow::Result<()> {
+pub fn run_gui(
+    config: AppConfig,
+    layout: DesktopLayout,
+    screenshot_out: Option<PathBuf>,
+) -> anyhow::Result<()> {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_title("Rustpaper — Multi-Monitor Wallpaper Manager")
@@ -1370,7 +1420,7 @@ pub fn run_gui(config: AppConfig, layout: DesktopLayout) -> anyhow::Result<()> {
         Box::new(move |cc| {
             cc.egui_ctx.set_visuals(egui::Visuals::dark());
             configure_typography(&cc.egui_ctx);
-            Ok(Box::new(RustpaperApp::new(config, layout)))
+            Ok(Box::new(RustpaperApp::new(config, layout, screenshot_out)))
         }),
     )
     .map_err(|e| anyhow::anyhow!("eframe error: {e}"))
